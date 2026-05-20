@@ -1,19 +1,18 @@
 import { APIRequestContext, expect } from "@playwright/test";
 import { credentials } from "./credentials";
+import { testDataAdditionalNeeds } from "./testData";
+
 let reservationId: any;
 export class api {
-  
   //TC01
   static async apiCheck(request: APIRequestContext): Promise<void> {
     const apiResponse = await request.get("/ping");
-    console.log(apiResponse);
     expect(apiResponse.status()).toBe(201);
   }
   //TC02
   static async getReservationList(request: APIRequestContext): Promise<void> {
     const response = await request.get("/booking");
     const reservationList = await response.json();
-    console.log(reservationList);
     expect(response.status()).toBe(200);
     expect(reservationList.length).toBeGreaterThan(0);
     reservationList.forEach((item) => {
@@ -107,7 +106,6 @@ export class api {
     });
     const addedReservation = await response.json();
     expect(response.status()).toBe(200);
-    console.log(addedReservation);
     expect(addedReservation.booking.firstname).toBe("John");
     expect(addedReservation).toHaveProperty("bookingid");
   }
@@ -136,8 +134,8 @@ export class api {
     reservationId = addedReservation.bookingid;
     const responseGet = await request.get(`/booking/${reservationId}`);
     expect(responseGet.status()).toBe(200);
-    //expect(addedReservation.booking.firstname).toBe("Jan");
-    //expect(addedReservation.booking.lastname).toBe("Kowalski");
+    expect(addedReservation.booking.firstname).toBe("Jan");
+    expect(addedReservation.booking.lastname).toBe("Kowalski");
     return reservationId;
   }
   //TC10
@@ -189,28 +187,19 @@ export class api {
   //TC12
   static async updateReservationUsingPatch(
     request: APIRequestContext,
-    token: string,
+    token: string, 
+    reservationData: any
   ): Promise<void> {
     const response = await request.patch(`/booking/${reservationId}`, {
       headers: {
         Cookie: `token=${token}`,
       },
-      data: {
-        firstname: "Katarzyna",
-        lastname: "Kowalska",
-        totalprice: 100,
-        depositpaid: true,
-        bookingdates: {
-          checkin: "2026-06-01",
-          checkout: "2026-06-07",
-        },
-        additionalneeds: "Breakfast",
-      },
+      data: reservationData,
     });
-    const responseBody= await response.json()
+    const responseBody = await response.json();
     expect(response.status()).toBe(200);
-    expect(responseBody.firstname).toBe("Katarzyna");
-    
+    expect(responseBody.firstname).toBe(reservationData.firstname);
+    expect(responseBody.additionalneeds).toBe(reservationData.additionalneeds);
   }
 
   //TC13
@@ -231,5 +220,70 @@ export class api {
       },
     });
     expect(response.status()).toBe(403);
+  }
+
+  //TC14
+
+  static async updateReservationBasicAuthToken(
+    request: APIRequestContext,
+  ): Promise<void> {
+    const response = await request.patch(`/booking/${reservationId}`, {
+      headers: {
+        Authorization: "Basic YWRtaW46cGFzc3dvcmQxMjM=",
+      },
+      data: {
+        firstname: "Katarzynaaa",
+        lastname: "Kowalskaaa",
+        totalprice: 100,
+        depositpaid: true,
+        bookingdates: {
+          checkin: "2026-06-01",
+          checkout: "2026-06-07",
+        },
+        additionalneeds: "Breakfast",
+      },
+    });
+    const responseBody = await response.json();
+    expect(response.status()).toBe(200);
+    expect(responseBody.firstname).toBe("Katarzynaaa");
+  }
+//TC15
+
+  static async deleteReservation(
+    request: APIRequestContext,
+    token: string,
+  ): Promise<void> {
+    const response = await request.delete(`/booking/${reservationId}`, {
+      headers: {
+        Cookie: `token=${token}`,
+      },
+    });
+    expect(response.status()).toBe(201);
+  }
+//TC16
+  static async verifyIfDeleted(
+    request: APIRequestContext,): Promise<void> {
+    const response = await request.get(`/booking/${reservationId}`);
+    expect(response.status()).toBe(404);
+  }
+
+  //TC17
+  static async deleteWithoutToken(
+    request: APIRequestContext,): Promise<void> {
+    const response = await request.delete(`/booking/${reservationId}`);
+    expect(response.status()).toBe(403);
+  }
+
+//TC18 E2E flow
+static async e2eFullFlow(
+    request: APIRequestContext): Promise<void> {
+      let token = await api.getToken(request);
+      let reservaionID = await api.addReservationAndVerify(request,token);
+      await api.updateReservationUsingPatch(request,token,testDataAdditionalNeeds);
+      const response = await request.get(`/booking/${reservationId}`);
+      const responseBody = await response.json();
+      expect (responseBody.additionalneeds).toBe('Late checkout'); 
+      await api.deleteReservation(request,token);
+      await api.verifyIfDeleted(request);
   }
 }

@@ -1,5 +1,6 @@
 import { test, expect, request} from '@playwright/test';
 import { api } from '../helpers/pages';
+import { testDataKatarzyna,testDataAdditionalNeeds } from '../helpers/testData';
 
  let token :any;
  
@@ -48,11 +49,29 @@ test('updateReservation',async({request})=>{
     await api.updateReservation(request,token);
 });
 test('updateReservationUsingPatch',async({request})=>{
-    await api.updateReservationUsingPatch(request,token);
+    await api.updateReservationUsingPatch(request,token,testDataKatarzyna);
 });
 
 test('updateReservationWithoutToken',async({request})=>{
     await api.updateReservationWithoutToken(request);
 });
 
+test('updateReservationBasicAuthToken',async({request})=>{
+    await api.updateReservationBasicAuthToken(request);
+});
 
+test('deleteReservation',async({request})=>{
+    await api.deleteReservation(request,token)
+})
+
+test('verifyIfReservtionWasDeleted',async({request})=>{
+    await api.verifyIfDeleted(request);
+})
+
+test('deleteWithoutToken',async({request})=>{
+    await api.deleteWithoutToken(request);
+})
+
+test('e2eFullFlow',async({request})=>{
+     await api.e2eFullFlow(request)
+})
