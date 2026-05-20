@@ -2,6 +2,7 @@ import { test, expect, request} from '@playwright/test';
 import { api } from '../helpers/pages';
 
  let token :any;
+ 
 
 test('API health check', async ({request}) => {
     await api.apiCheck(request);  
@@ -9,12 +10,10 @@ test('API health check', async ({request}) => {
 
 test('getReservationList',async ({request}) =>{
     await api.getReservationList(request);
-
 });
 
 test('getReservationDetails',async ({request}) =>{ 
     await api.getReservationDetails(request);
-
 });
 
 test('getNonExistingReservation',async({request})=>{
@@ -39,6 +38,21 @@ test('addReservation',async({request})=>{
 
 test('addReservationAndVerify',async({request})=>{
     await api.addReservationAndVerify(request,token);
+});
+
+test('addInvalidReservation',async({request})=>{
+    await api.addInvalidReservation(request,token);
+});
+
+test('updateReservation',async({request})=>{
+    await api.updateReservation(request,token);
+});
+test('updateReservationUsingPatch',async({request})=>{
+    await api.updateReservationUsingPatch(request,token);
+});
+
+test('updateReservationWithoutToken',async({request})=>{
+    await api.updateReservationWithoutToken(request);
 });
 
 

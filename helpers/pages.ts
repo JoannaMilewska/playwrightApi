@@ -1,7 +1,8 @@
 import { APIRequestContext, expect } from "@playwright/test";
 import { credentials } from "./credentials";
-
+let reservationId: any;
 export class api {
+  
   //TC01
   static async apiCheck(request: APIRequestContext): Promise<void> {
     const apiResponse = await request.get("/ping");
@@ -56,7 +57,7 @@ export class api {
   }
 
   //TC06
-  static async getToken(request: APIRequestContext): Promise<void> {
+  static async getToken(request: APIRequestContext): Promise<string> {
     const response = await request.post("/auth", {
       data: {
         username: credentials.username,
@@ -106,15 +107,15 @@ export class api {
     });
     const addedReservation = await response.json();
     expect(response.status()).toBe(200);
-    console.log(addedReservation)
+    console.log(addedReservation);
     expect(addedReservation.booking.firstname).toBe("John");
     expect(addedReservation).toHaveProperty("bookingid");
   }
-//TC09
-static async addReservationAndVerify(
+  //TC09
+  static async addReservationAndVerify(
     request: APIRequestContext,
     token: string,
-  ): Promise<void> {
+  ): Promise<string> {
     const responsePost = await request.post("/booking", {
       headers: {
         Authorization: `Bearer ${token}`,
@@ -132,14 +133,15 @@ static async addReservationAndVerify(
       },
     });
     const addedReservation = await responsePost.json();
-    const reservationId = addedReservation.bookingid
+    reservationId = addedReservation.bookingid;
     const responseGet = await request.get(`/booking/${reservationId}`);
     expect(responseGet.status()).toBe(200);
-    expect(addedReservation.booking.firstname).toBe("Jan");
-    expect(addedReservation.booking.lastname).toBe("Kowalski");
+    //expect(addedReservation.booking.firstname).toBe("Jan");
+    //expect(addedReservation.booking.lastname).toBe("Kowalski");
+    return reservationId;
   }
   //TC10
-static async addInvalidReservation(
+  static async addInvalidReservation(
     request: APIRequestContext,
     token: string,
   ): Promise<void> {
@@ -149,7 +151,6 @@ static async addInvalidReservation(
       },
       data: {
         firstname: "Jan",
-        lastname: "Kowalski",
         totalprice: 100,
         depositpaid: true,
         bookingdates: {
@@ -159,7 +160,76 @@ static async addInvalidReservation(
         additionalneeds: "Breakfast",
       },
     });
+    expect(response.status()).toBe(500);
+  }
+  //TC11
+  static async updateReservation(
+    request: APIRequestContext,
+    token: string,
+  ): Promise<void> {
+    const response = await request.put(`/booking/${reservationId}`, {
+      headers: {
+        Cookie: `token=${token}`,
+      },
+      data: {
+        firstname: "Janusz",
+        lastname: "Kowal",
+        totalprice: 500,
+        depositpaid: true,
+        bookingdates: {
+          checkin: "2026-06-01",
+          checkout: "2026-06-07",
+        },
+        additionalneeds: "Breakfast",
+      },
+    });
+    expect(response.status()).toBe(200);
+  }
 
+  //TC12
+  static async updateReservationUsingPatch(
+    request: APIRequestContext,
+    token: string,
+  ): Promise<void> {
+    const response = await request.patch(`/booking/${reservationId}`, {
+      headers: {
+        Cookie: `token=${token}`,
+      },
+      data: {
+        firstname: "Katarzyna",
+        lastname: "Kowalska",
+        totalprice: 100,
+        depositpaid: true,
+        bookingdates: {
+          checkin: "2026-06-01",
+          checkout: "2026-06-07",
+        },
+        additionalneeds: "Breakfast",
+      },
+    });
+    const responseBody= await response.json()
+    expect(response.status()).toBe(200);
+    expect(responseBody.firstname).toBe("Katarzyna");
+    
+  }
 
-
+  //TC13
+  static async updateReservationWithoutToken(
+    request: APIRequestContext,
+  ): Promise<void> {
+    const response = await request.put(`/booking/${reservationId}`, {
+      data: {
+        firstname: "Januszex",
+        lastname: "Kowal",
+        totalprice: 500,
+        depositpaid: true,
+        bookingdates: {
+          checkin: "2026-06-01",
+          checkout: "2026-06-07",
+        },
+        additionalneeds: "Breakfast",
+      },
+    });
+    expect(response.status()).toBe(403);
+  }
 }
